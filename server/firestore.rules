@@ -1,0 +1,21 @@
+// ILLUSTRATIVE production rules for the photo rule + ownership. NOT deployed and NOT run in the Firebase emulator.
+// Photos must live in Firebase Storage; each image entry here is { url, storagePath, order, isCover }.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function imgOk(d) { return d.images is list && d.images.size() >= 5 && d.images.size() <= 15; }
+    match /products/{id} {
+      allow read: if resource.data.status == 'active' || (signedIn() && resource.data.ownerUserId == request.auth.uid) || isAdmin();
+      allow create: if signedIn() && request.resource.data.ownerUserId == request.auth.uid
+        && (request.resource.data.status == 'draft' || (request.resource.data.status == 'pending' && imgOk(request.resource.data)));
+      allow update: if isAdmin() || (signedIn() && resource.data.ownerUserId == request.auth.uid
+        && request.resource.data.ownerUserId == resource.data.ownerUserId
+        && (request.resource.data.status == 'draft'
+          || (request.resource.data.status == resource.data.status && request.resource.data.status in ['pending', 'active', 'paused'] && imgOk(request.resource.data))
+          || (request.resource.data.status == 'pending' && resource.data.status in ['draft', 'rejected'] && imgOk(request.resource.data))));
+      allow delete: if signedIn() && resource.data.ownerUserId == request.auth.uid;
+    }
+  }
+}

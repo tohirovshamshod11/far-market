@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarMarket — Bozorga bormang, bozor sizga kelsin.</title>
+    <meta name="description" content="FarMarket — chorva, yem-xashak va qishloq xo‘jaligi xizmatlarini birlashtiruvchi zamonaviy raqamli marketplace.">
+    <meta property="og:title" content="FarMarket — Bozorga bormang, bozor sizga kelsin.">
+    <meta property="og:description" content="Chorva, yem-xashak va qishloq xo‘jaligi xizmatlari uchun raqamli marketplace.">
+    <meta property="og:image" content="assets/logo.png">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+         :root {
+            --fm-green-dark: #0d4a2f;
+            --fm-green: #2f8f2a;
+            --fm-green-light: #e8f4e4;
+            --fm-yellow: #f5b800;
+            --fm-orange: #e08a10;
+            --fm-white: #fff;
+            --fm-bg: #f6f8f4;
+            --fm-text: #17271d;
+            --fm-muted: #5d6e63;
+            --fm-border: #dde5db;
+            --fm-danger: #c0392b;
+            --fm-success: #2f8f2a
+        }
+        
+        * {
+            box-sizing: border-box
+        }
+        
+        html,
+        body {
+            overflow-x: hidden
+        }
+        
+        body {
+            font-family: Manrope, system-ui, sans-serif;
+            background: var(--fm-bg);
+            color: var(--fm-text)
+        }
+        
+        .route-view {
+            display: none
+        }
+        
+        .route-view.active {
+            display: block
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            padding: .55rem 1rem;
+            border-radius: .65rem;
+            font-weight: 700;
+            font-size: .8rem;
+            transition: .15s;
+            border: 1px solid transparent;
+            cursor: pointer
+        }
+        
+        .btn:disabled {
+            opacity: .55;
+            cursor: not-allowed
+        }
+        
+        .btn-primary {
+            background: var(--fm-green);
+            color: #fff
+        }
+        
+        .btn-primary:hover {
+            background: var(--fm-green-dark)
+        }
+        
+        .btn-accent {
+            background: var(--fm-yellow);
+            color: #3a2a00
+        }
+        
+        .btn-accent:hover {
+            background: var(--fm-orange);
+            color: #fff
+        }
+        
+        .btn-ghost {
+            background: #fff;
+            border-color: var(--fm-border);
+            color: var(--fm-text)
+        }
+        
+        .btn-ghost:hover {
+            border-color: var(--fm-green)
+        }
+        
+        .btn-danger {
+            background: #fff;
+            border-color: var(--fm-danger);
+            color: var(--fm-danger)
+        }
+        
+        .card {
+            background: #fff;
+            border: 1px solid var(--fm-border);
+            border-radius: .9rem;
+            box-shadow: 0 1px 2px rgba(13, 74, 47, .05)
+        }
+        
+        .input {
+            width: 100%;
+            padding: .55rem .75rem;
+            border: 1px solid var(--fm-border);
+            border-radius: .6rem;
+            font-size: .85rem;
+            background: #fff
+        }
+        
+        .input:focus,
+        .btn:focus-visible,
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--fm-green);
+            outline-offset: 1px
+        }
+        
+        .lbl {
+            display: block;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--fm-muted);
+            margin: .6rem 0 .2rem
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+            font-size: .68rem;
+            font-weight: 700;
+            padding: .15rem .5rem;
+            border-radius: 99px;
+            background: var(--fm-green-light);
+            color: var(--fm-green-dark)
+        }
+        
+        .badge.y {
+            background: #fff4cc;
+            color: #7a5600
+        }
+        
+        .badge.r {
+            background: #fde8e6;
+            color: var(--fm-danger)
+        }
+        
+        .badge.g {
+            background: #eef1ee;
+            color: var(--fm-muted)
+        }
+        
+        .chip {
+            padding: .4rem .85rem;
+            border-radius: 99px;
+            font-size: .75rem;
+            font-weight: 700;
+            border: 1px solid var(--fm-border);
+            background: #fff;
+            white-space: nowrap;
+            cursor: pointer
+        }
+        
+        .chip.on {
+            background: var(--fm-green-dark);
+            color: #fff;
+            border-color: var(--fm-green-dark)
+        }
+        
+        .nav-link {
+            padding: .4rem .2rem;
+            font-size: .78rem;
+            font-weight: 700;
+            color: var(--fm-muted);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap
+        }
+        
+        .nav-link.on,
+        .nav-link:hover {
+            color: var(--fm-green-dark);
+            border-color: var(--fm-yellow)
+        }
+        
+        .err {
+            color: var(--fm-danger);
+            font-size: .72rem;
+            margin-top: .2rem
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--fm-muted)
+        }
+        
+        .star {
+            color: var(--fm-yellow)
+        }
+        
+        .spin {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #fff6;
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: s .7s linear infinite
+        }
+        
+        @keyframes s {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+        
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity .4s
+        }
+        
+        #splash img {
+            width: min(60vw, 260px);
+            height: auto;
+            object-fit: contain;
+            animation: p 1.2s ease-in-out infinite alternate
+        }
+        
+        @keyframes p {
+            to {
+                opacity: .65
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <div id="splash"><img src="assets/logo.png" alt="FarMarket logo"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none" aria-live="polite"></div>
+
+    <header class="sticky top-0 z-40 bg-white border-b" style="border-color:var(--fm-border)">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+            <a href="#home" data-route="home" class="flex items-center shrink-0" aria-label="FarMarket bosh sahifa">
+                <img src="assets/logo.png" alt="FarMarket logo" class="hidden sm:block h-11 w-auto object-contain">
+                <img src="assets/logo-mark.png" alt="FarMarket logo" class="sm:hidden h-9 w-9 object-contain">
+                <span class="sm:hidden ml-1 font-extrabold" style="color:var(--fm-green-dark)">Far<span
+                            style="color:var(--fm-yellow)">M</span>arket</span>
+            </a>
+            <nav class="hidden md:flex items-center gap-5" aria-label="Asosiy menyu" id="nav-main"></nav>
+            <div class="flex items-center gap-2">
+                <div id="auth-out"><button id="btn-open-login" class="btn btn-primary">Kirish</button></div>
+                <div id="auth-in" class="hidden items-center gap-1.5">
+                    <button data-route="wishlist" class="btn btn-ghost !px-2.5" aria-label="Saralanganlar">♥ <span
+                                id="wishlist-badge"
+                                class="badge">0</span></button>
+                    <button data-route="notifications" class="btn btn-ghost !px-2.5" aria-label="Xabarnomalar">🔔 <span id="notif-badge"
+                                class="badge y">0</span></button>
+                    <button data-route="purchases" class="btn btn-ghost hidden sm:inline-flex">Xaridlar</button>
+                    <button data-route="sellerDashboard" class="btn btn-accent hidden sm:inline-flex">Sotuvchi
+                            kabineti</button>
+                    <button id="btn-user" class="btn btn-ghost"><span
+                                id="user-name">Profil</span></button>
+                </div>
+            </div>
+        </div>
+        <nav class="md:hidden flex gap-4 overflow-x-auto px-4 pb-1 border-t" style="border-color:var(--fm-border)" id="nav-mobile" aria-label="Mobil menyu"></nav>
+    </header>
+
+    <main class="flex-grow pb-16 md:pb-0">
+        <section id="view-home" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-marketplace" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-sell" class="route-view max-w-4xl mx-auto px-4 py-6"></section>
+        <section id="view-feed" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-sellerProfile" class="route-view max-w-5xl mx-auto px-4 py-6"></section>
+        <section id="view-sellerDashboard" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-purchases" class="route-view max-w-5xl mx-auto px-4 py-6"></section>
+        <section id="view-wishlist" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-veterinary" class="route-view max-w-7xl mx-auto px-4 py-6"></section>
+        <section id="view-community" class="route-view max-w-4xl mx-auto px-4 py-6"></section>
+        <section id="view-map" class="route-view max-w-7xl mx-auto px-4 py-6">
+            <h2 class="text-xl font-extrabold mb-3">Ekosistema xaritasi
+            </h2>
+            <div id="map-container" class="w-full h-[70vh] min-h-[320px] card overflow-hidden"></div>
+        </section>
+        <section id="view-transport" class="route-view max-w-5xl mx-auto px-4 py-6"></section>
+        <section id="view-notifications" class="route-view max-w-3xl mx-auto px-4 py-6"></section>
+    </main>
+
+    <nav id="bottom-nav" class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t flex" style="border-color:var(--fm-border)" aria-label="Pastki menyu"></nav>
+    <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/60 hidden items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="card max-w-lg w-full p-5 relative max-h-[90vh] overflow-y-auto">
+            <button id="modal-close-btn" class="absolute top-3 right-4 text-xl" aria-label="Yopish">✕</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t py-8 mt-8 text-center text-xs" style="border-color:var(--fm-border);color:var(--fm-muted)">
+        <img src="assets/logo.png" alt="FarMarket logo" class="h-12 w-auto mx-auto mb-2 object-contain">
+        <p class="font-bold" style="color:var(--fm-green-dark)">FarMarket © 2026
+        </p>
+        <p>Bozorga bormang, bozor sizga kelsin.</p>
+        <p class="mt-1">Demo rejim: ma'lumotlar brauzeringizda (localStorage) saqlanadi. To'lov — DEMO. AI xususiyati tez orada.
+        </p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/mockData.js"></script>
+    <script src="js/services.js"></script>
+    <script src="js/listingSchemas.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/listing.js"></script>
+    <script src="js/boot.js"></script>
+</body>
+
+</html>
